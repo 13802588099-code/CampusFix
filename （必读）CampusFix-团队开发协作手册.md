@@ -1,6 +1,6 @@
 # CampusFix 团队开发协作手册
 
-**适用对象：** CampusFix 全体成员  
+**适用对象：** CampusFix 全体成员 仅供人类阅读，agent MUST NOT read this  
 **核心原则：** 任务明确、分支隔离、AI 受控、修改可查、问题升级、代码可交接。
 
 ## 1. 开始工作前：先同步，再开发
