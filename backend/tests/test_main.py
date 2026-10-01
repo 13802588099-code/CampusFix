@@ -35,3 +35,20 @@ def test_request_validation_uses_the_uniform_error_envelope():
     assert payload["code"] == "VALIDATION_ERROR"
     assert payload["field_errors"]
     assert payload["request_id"].startswith("req_")
+
+
+def test_state_changing_requests_without_an_allowed_origin_are_rejected_uniformly():
+    from app.main import create_app
+
+    app = create_app()
+
+    @app.post("/mutate")
+    def mutate():
+        return {"ok": True}
+
+    response = TestClient(app).post("/mutate")
+
+    assert response.status_code == 403
+    payload = response.json()["error"]
+    assert payload["code"] == "ORIGIN_NOT_ALLOWED"
+    assert payload["request_id"].startswith("req_")

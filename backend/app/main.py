@@ -35,7 +35,19 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def request_context(request: Request, call_next):
         request.state.request_id = "req_" + secrets.token_urlsafe(12)
-        require_same_origin(request, settings)
+        try:
+            require_same_origin(request, settings)
+        except OriginError:
+            request_id = request.state.request_id
+            return JSONResponse(
+                status_code=403,
+                content=error_payload(
+                    code=ErrorCode.ORIGIN_NOT_ALLOWED,
+                    message="The request origin is not allowed.",
+                    request_id=request_id,
+                ),
+                headers={"X-Request-ID": request_id},
+            )
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
         return response
