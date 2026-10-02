@@ -1,0 +1,126 @@
+# CampusFix #46 API 契约交接
+
+## 当前状态
+
+- 契约版本：`1.0.0`，**Pending review / 未正式冻结**。
+- 任务：[Issue #46](https://github.com/MyeeeeR1kooo/CampusFix/issues/46)。负责人：蒋雨涵、熊雄；前端逐条评审：张越、舒玺悦；人工批准后才冻结。
+- 代码基线：用户已确认使用 `base-auth`，核对快照为 `261007dde3ce710ea9ef2395c6c98a36602c750f`。Issue 中的历史分支标注不代表此次使用了不存在的分支。
+- 产品依据：[P0 冻结基线](../superpowers/specs/CampusFix%20P0%20Requirements%20%26%20Design%20Baseline.md)，尤其第 3–7、9–12、14 节；Core 依据：[交接说明](../superpowers/handoffs/2026-10-02-base-auth-api-handoff.md)。旧 PRD 已作废，不用于增加功能。
+- 交付范围：字段清单、完整契约、契约校验、可生成的 Mock、TypeScript 类型生成验证。本次没有修改状态机、权限、数据库、Core 或业务模块。待评审稿通过分支/草稿 PR 交付；人工评审批准、正式冻结、合并及关闭 #46 仍未完成。
+
+入口：[最小字段清单](minimal-fields.md) → [OpenAPI 契约](openapi.yaml) → [前端评审清单](review-checklist.md)。
+
+## 已实现与待实现对照
+
+| 契约 / 能力 | `base-auth` 现状 | 此次一致性证据 |
+| --- | --- | --- |
+| GET `/health` | 已实现；返回 `{status: "ok"}` | 真实应用调用后按 Schema 校验；路径不误写成 `/api/health` |
+| 错误包裹、请求 ID、8 个 ErrorCode | Core 已实现 | 用真实 Core 的 AppError / 校验 / Origin 拒绝路径检查 Schema；枚举精确对照 `core/errors.py` |
+| Cookie / Origin | Core 提供工具及中间件 | Cookie 名/安全属性/8 小时默认值与契约一致；所有写请求含 Origin 参数 |
+| Auth（3）、Tickets/Workflow/Comments（11） | 仅空模块，业务路由待实现 | 静态契约和输入/输出样例验证，不宣称登录、事务和权限已经运行 |
+| Attachments/Locations/Users/Analytics（8） | 仅空模块，业务路由待实现 | 静态契约、图片元数据、分页与统计 Schema 校验 |
+
+共 23 个操作：22 个冻结基线业务操作，加上已有 `/health`。FastAPI 自动文档路由和测试临时路由不是业务接口。
+
+重要的 Core 现有限制（已做只读诊断，本次不改相邻模块）：
+
+- 普通 `HTTPException` 仅正确映射已配置的 401/403/404；400/413/415/422/500 的当前默认错误码为 CONFLICT，且字符串 detail 会原样返回。业务模块应按 Core 交接使用 `AppError`，显式指定契约状态、ErrorCode 和安全文案，不能把内部异常字符串作为 message。
+- 未注册路径的框架 404、错误方法的 405 仍为 `{detail: ...}`，不属于此文件声明的操作；后续 Core 全局错误统一可单独提 Issue。正式业务接口的“不可见/不存在资源”仍必须使用 `AppError(NOT_FOUND, 404, ...)`，不得将这项现状当作业务豁免。
+- HTTPException 原附加头不会全部保留。成功登录/登出按 Cookie helper 设置响应头，不依赖该异常处理器传递 Cookie。
+
+## 本次确定的契约约定
+
+这些是 #46 授权范围内的表示和实现约定，不增加 P0 功能：
+
+| 事项 | 约定 |
+| --- | --- |
+| 成功响应 | 创建工单/留言/地点 201；其他有正文动作 200；退出 204 无正文。正文直接返回声明对象，不额外套 `data` |
+| 错误 | 固定 `{error:{code,message,request_id,field_errors}}`；只复用 Core 8 个枚举。400/413/415/422 使用 VALIDATION_ERROR，通过 HTTP 状态区分。业务状态冲突 CONFLICT，旧版本 TICKET_VERSION_CONFLICT |
+| ID | JSON 正整数 `integer/int64`。不擅自改成字符串；JS 超过 `Number.MAX_SAFE_INTEGER` 会有精度风险，未来变更需评审，当前演示数据应处于安全范围 |
+| 时间 | UTC ISO 8601，以 Z 结尾；趋势日期单独使用 Asia/Shanghai 的 YYYY-MM-DD。数据库仍使用 timestamptz |
+| 分页 | `items/next_cursor`；无下一页 null。默认 20、最大 100；排序 `created_at DESC,id DESC`。游标不透明，不跨筛选条件复用；无 count/offset/page 额外接口 |
+| 可空 | `?` 是必返字段的 null，不是省略。工单 priority/assignee/closed_at 按状态关系校验；终态无 allowed_actions |
+| 列表筛选 | 七类过滤 AND 组合；时间范围 `[created_from, created_before)`；维修人员筛选仅 Admin。楼宇使用关联地点的 building，历史展示仍读取快照 |
+| 时间线 | 合并事件与留言，按 `created_at ASC, kind ASC, id ASC` 稳定排序；kind 同时用于前端区分两类对象 |
+| 图片 | 创建/resolve 两处 multipart，重复同名 photos 部件；每用途累计最多 5 张，每张 5 MiB，JPEG/PNG/WebP。返工不增加图片总额度，无独立上传、编辑或删除接口 |
+| 统计 | 六组，耗时单位秒且包括等待阶段；无关闭样本为 0，空分布 []；连续 30 个上海自然日含今日、升序补零。Mock 日期固定，仅供确定性展示 |
+
+授权、资源归属、ADMIN_ONLY 过滤、图片解码、乐观锁及事务必须在业务实现中验证。Schema 和 TypeScript 不替代这些后端检查。
+
+## 本地验证与生成
+
+在仓库根目录运行；Python 开发环境建议使用虚拟环境。首次准备（Python 3.9+；本次验证使用 3.12）：
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -e "./backend[dev]"
+```
+
+契约和当前 Core 测试、Mock 实测：
+
+```powershell
+.venv\Scripts\python.exe -m openapi_spec_validator docs/api/openapi.yaml
+.venv\Scripts\python.exe -m pytest backend/tests tools/test_api_contract_mock.py -q
+.venv\Scripts\python.exe tools/api_contract_mock.py
+```
+
+最后一条从契约样例生成 `.contract-artifacts/mock-responses.json`，记录操作、状态码、媒体类型、样例名和正文。输出被忽略，不提交生成物。全部 JSON 样例先按对应 Schema 校验，错误会直接阻止导出。
+
+TypeScript 生成与编译检查（Node 20+、pnpm；依赖版本及完整依赖树在工具专用目录固定，不改变前端或后端运行依赖）：
+
+```powershell
+pnpm --dir tools/api-contract install --frozen-lockfile --ignore-scripts
+pnpm --dir tools/api-contract run generate
+pnpm --dir tools/api-contract run typecheck
+```
+
+生成 `.contract-artifacts/schema.d.ts`，`smoke.ts` 检查审核两种请求、列表、详情、时间线、附件等类型可用，并要求不完整审核请求等错误不能通过编译。后续前端接入时复用生成类型，不手写第二套枚举。改 YAML 后先重新生成再编译。
+
+### Mock 预览
+
+```powershell
+.venv\Scripts\python.exe tools/api_contract_mock.py --serve --port 4010
+```
+
+只监听本机 `127.0.0.1`。前端开发代理可将 `/api` 指向 `http://127.0.0.1:4010`，无需为 Mock 开放跨域。改契约后重启；结束时 Ctrl+C。
+
+| 想预览的情况 | 示例请求控制头 |
+| --- | --- |
+| 待确认详情含图片/分派 | GET `/api/tickets/1`，`X-Mock-Example: pending_confirmation_reporter` |
+| 审核驳回 | POST `/api/tickets/1/review`，`X-Mock-Example: rejected` |
+| 空列表 | GET `/api/tickets`，`X-Mock-Example: empty` |
+| 版本冲突 | POST `/api/tickets/1/confirm`，`X-Mock-Status: 409`、`X-Mock-Example: version` |
+| 来源拒绝 | 任一声明 403 的写端点，`X-Mock-Status: 403`、`X-Mock-Example: origin` |
+| 角色拒绝 | 声明 403 的端点，`X-Mock-Status: 403`、`X-Mock-Example: role` |
+
+这只是**无状态样例服务**：不验证请求体、Cookie、Origin、权限、筛选，不保存状态或改变版本；路径 ID 不改变样例中的 ID。它按契约返回固定示例，不做真实登录，也不设置假会话 Cookie。附件下载用安全的 1×1 PNG 占位图；JPEG/WebP 在导出中是媒体类型说明，不代表真实图片上传测试。控制头不在正式业务契约中，不能发送到生产 API。Mock 自身的错误用 `mock_error` 明确区分。
+
+## 测试记录与未验证部分
+
+实际变更文件（均为 #46；原始工作树干净，未覆盖他人修改）：
+
+- 文档：`docs/api/minimal-fields.md`、`docs/api/openapi.yaml`、`docs/api/README.md`、`docs/api/review-checklist.md`。
+- 校验：`backend/tests/test_api_contract.py`；`backend/pyproject.toml` 只增加三项固定版本的开发校验依赖。
+- Mock：`tools/api_contract_mock.py`、`tools/test_api_contract_mock.py`。
+- 类型生成：`tools/api-contract/package.json`、`.npmrc`、`pnpm-lock.yaml`、`smoke.ts`。
+- `.gitignore`：忽略虚拟环境、缓存、开发包及生成物。没有修改 Core/业务代码或数据库。
+
+2026-10-02 本地结果：
+
+- OpenAPI 3.1 校验通过；109 项测试通过（后端 99、Mock 10）。
+- 所有操作的成功及错误响应样例通过 Schema 校验；Mock 导出 23 操作、189 个响应示例。
+- TypeScript 类型生成及严格编译通过，含预期应失败的类型案例。
+- 一个来自现有 FastAPI/Starlette 依赖范围的 TestClient/httpx 弃用警告，不是失败；未顺手升级依赖。
+
+未运行且不应伪称通过：真实 PostgreSQL 业务集成、登录权限/停用会话、状态事务/并发、真实图片内容校验、业务统计查询、前端页面及 E2E。这些依赖尚未实现的业务模块，不能用 SQLite 或 Mock 代替。
+
+## 评审和冻结规则
+
+1. 蒋雨涵、熊雄完成后端字段及可实现性检查；张越、舒玺悦按 [逐条清单](review-checklist.md) 评审页面字段与 Mock，无须在常规技术细节成稿前逐项决策。
+2. 缺字段先说明对应冻结基线/页面，不通过“前端需要”直接增加 P0 范围。涉及权限、状态机、核心数据库或产品规则，先由负责人批准基线变更。
+3. 组长/有决策权限的人类批准后，在 Issue/PR 留下评审证据；更新清单、`x-contract-status` 和此处状态，才正式冻结 v1.0。AI 不代签。
+4. **冻结后的任何契约改动必须走 Issue + 升版本号 + 通知全组**，列明原因、请求/响应/枚举影响、后端与前端调用方、测试和迁移影响。破坏兼容性升主版本，向后兼容增加升次版本，仅说明/示例修正升补丁版本；若影响 P0 基线仍需先评审基线。
+5. 修改后重新运行契约/样例/类型检查，业务实现逐条补充真实一致性测试；将类型/Mock重新生成，不手改生成物。
+6. 人工检查本地 diff 和敏感信息，再按团队流程 Commit、Push、PR、Review、Merge。推送分支或创建草稿 PR 仅表示待评审稿可查阅，不代表已批准、正式冻结、合并或 #46 已关闭。
+
+工程参考：[OpenAPI 3.1 官方规范](https://spec.openapis.org/oas/v3.1.0.html)、[openapi-typescript 官方 CLI](https://openapi-ts.dev/cli)。
