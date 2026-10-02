@@ -30,6 +30,20 @@ from app.core.security import (
 - `AppError`、`ErrorCode`：统一错误响应。
 - `create_app()`：在此注册业务 Router；API 前缀统一为 `/api`。
 
+### 按接口复用关系
+
+| 业务接口 | 应复用的 Core 能力 | 业务模块还需要负责 |
+| --- | --- | --- |
+| `POST /api/auth/login` | `get_db`、`verify_password`、`generate_session_token`、`hash_session_token`、`set_session_cookie`、`AppError` | 查询启用用户、创建 `sessions` 记录、统一登录失败提示 |
+| `POST /api/auth/logout` | `get_db`、`get_session_token`、`hash_session_token`、`clear_session_cookie`、`AppError` | 删除当前会话记录 |
+| `GET /api/me` | `get_db`、`get_session_token`、`hash_session_token`、`AppError` | 校验会话有效期和用户 `active` 状态，返回当前用户 |
+| 所有受保护接口 | Auth 模块提供的当前用户依赖、`get_db`、`AppError` | 角色、资源关系和账户状态校验 |
+| 所有写接口 | `create_app()` 已执行 Origin 校验、`AppError` | 实现业务校验和事务；不重复实现一套 Origin 规则 |
+| 工单、地点、用户、统计接口 | `get_db`、`AppError`、`ErrorCode` | 模型查询、权限过滤、响应 Schema 和业务规则 |
+| 附件接口 | `get_settings`、`get_db`、`AppError` | 文件校验、私有存储、元数据和授权下载 |
+
+Core 当前**没有**提供 `get_current_user`、角色依赖或工单资源权限依赖；这些应由 Auth/Users/Workflow 模块实现，并供其他 Router 使用。
+
 ## 2. 配置字段不属于业务 API
 
 `database_url`、`secret_key`、`attachment_storage_path`、`allowed_origins`、`session_lifetime_seconds`、`environment`、`secure_cookies`、`credentials_enabled` 是后端运行配置。
