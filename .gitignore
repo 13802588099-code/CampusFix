@@ -5,3 +5,8 @@ __pycache__/
 *.egg-info/
 .contract-artifacts/
 node_modules/
+.env
+.env.*
+!.env.example
+frontend/dist/
+data/
