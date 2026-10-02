@@ -2,10 +2,12 @@
  * Component layer (logical component inventory).
  * Order follows the inventory so the stylesheet can be audited against it.
  *
- * Visual language: linear strokes, one accent, no decorative icon use. Every
- * class name from the first pass is preserved so the page components did not
- * have to change at the same time as the styling; the components added later
- * (status rail, ticket card, icon) are marked NEW.
+ * Visual language: linear strokes, one accent, no decorative icon use.
+ *
+ * The stylesheet ships complete with the scaffold: the shared component
+ * library's TSX (#48's other half, 舒玺悦 — CONVENTIONS.md §1) is built against
+ * these class names, so a section whose component does not exist yet (status
+ * rail, ticket card, …) is pre-provisioned, not dead code.
  */
 
 /* -------------------------------------------------------------------- icons */
@@ -926,9 +928,9 @@ input[type="radio"] {
   border-top: 1px solid var(--n-200);
 }
 
-/* --------------------------------------------------------- NEW: status rail
-   The flagship component of the redesign. It renders the binding header rule
-   (Baseline §13.3) as a six-step progress track instead of a line of text:
+/* -------------------------------------------------------------- status rail
+   Renders the binding header rule (Baseline §13.3) as a six-step progress
+   track instead of a line of text:
    what happened, what is happening, and what has not happened yet are three
    different visual states, so "where am I" is answered by shape, not reading.
 
@@ -1752,7 +1754,7 @@ input[type="radio"] {
   margin-top: var(--space-1);
 }
 
-/* ------------------------------------------------------- NEW: ticket card
+/* ----------------------------------------------------------- ticket card
    The reporter's and technician's list form. It replaces a table row where the
    reader has few rows and one question ("where is it now?"), so the card can
    afford to answer that question inline instead of in another column. */
