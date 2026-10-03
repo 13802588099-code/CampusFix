@@ -72,7 +72,7 @@
   }
 
   /* The timeline is the reference the reader keeps glancing back at, so on
-     desktop it stays in place while the content column scrolls (§17). */
+     desktop it stays in place while the content column scrolls. */
   .detail-side {
     align-self: stretch;
   }
@@ -180,7 +180,7 @@
 /* ------------------------------------------------------------------ phone */
 
 @media (max-width: 719px) {
-  /* ---- shell: the task tier moves to the bottom tab bar (§4.2) ---- */
+  /* ---- shell: the task tier moves to the bottom tab bar ---- */
   .task-bar {
     display: none;
   }
@@ -214,7 +214,7 @@
 
   /* ---- the rail becomes a vertical checklist: at 375px six horizontal
      labels cannot be read, and a vertical track answers "where is it"
-     better anyway (§5). ---- */
+     better anyway. ---- */
   .rail {
     flex-direction: column;
     align-items: stretch;
@@ -357,7 +357,7 @@
     flex: 1 1 auto;
   }
 
-  /* ---- controls: field use means gloves and one hand (§11.2) ---- */
+  /* ---- controls: field use means gloves and one hand ---- */
   button,
   .button {
     min-height: var(--tap-target-lg);
@@ -381,7 +381,7 @@
     align-self: stretch;
   }
 
-  /* The submit action stays reachable without scrolling back down (§14.2). */
+  /* The submit action stays reachable without scrolling back down. */
   .form-actions {
     position: sticky;
     bottom: calc(var(--tab-bar) + env(safe-area-inset-bottom, 0));

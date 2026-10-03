@@ -5,7 +5,7 @@
  *   tier 1 — identity: brand, current role, account, logout
  *   tier 2 — tasks:    the role's navigation, with the reporter's primary
  *                      action rendered as a call to action rather than a link
- * On phones the task tier is replaced by a bottom tab bar (§4.2), so the
+ * On phones the task tier is replaced by a bottom tab bar, so the
  * primary actions stay inside the thumb zone.
  *
  * Both tiers live inside the same <nav aria-label="Main"> because they are one
@@ -70,7 +70,7 @@ a {
 }
 
 /* Ticket codes and statistic values are the two places where aligned digits
-   matter, so they are the only places the monospace face is used (§8.1). */
+   matter, so they are the only places the monospace face is used. */
 code,
 .ticket-code,
 .mono {
@@ -82,7 +82,7 @@ code {
   font-size: 0.85em;
 }
 
-/* Visible focus for every keyboard user (§24) */
+/* Visible focus for every keyboard user (§13.3) */
 :focus-visible {
   outline: 2px solid var(--brand-600);
   outline-offset: 2px;
@@ -344,7 +344,7 @@ code {
   color: var(--n-900);
 }
 
-/* Active state is a weight + underline change, not colour alone (§11.4). */
+/* Active state is a weight + underline change, not colour alone (§13.3). */
 .nav-link-active {
   color: var(--brand-700);
   border-bottom-color: var(--brand-600);

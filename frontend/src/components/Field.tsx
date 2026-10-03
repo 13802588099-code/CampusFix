@@ -1,5 +1,5 @@
 /**
- * Form controls with the accessibility wiring done once (P0 Baseline §13.3, §13.4).
+ * Form controls with the accessibility wiring done once (P0 Baseline §13.3).
  *
  * Every control renders a *visible* label (placeholders never substitute for one),
  * associates its hint and error with `aria-describedby`, and sets `aria-invalid` when the

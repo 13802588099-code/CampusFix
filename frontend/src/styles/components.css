@@ -208,7 +208,7 @@
 }
 
 /* A 409 is not an error the user caused, so it reads as a caution and states
-   what happened — never a bare "something went wrong" (§12.1). */
+   what happened — never a bare "something went wrong" (§13.3). */
 .banner-conflict {
   background: var(--amber-bg);
   border-color: var(--amber-line);
@@ -239,8 +239,8 @@
   color: var(--banner-error-ink);
 }
 
-/* A discard is not one of the eight statuses, so it gets no status colour
-   (§2.7 forbids inventing semantic colours, and §2.5's badge map is closed).
+/* A discard is not one of the eight statuses (§4.1), so it gets no status
+   colour — the semantic set stays closed to those eight.
    Neutral is also the honest read: the ticket was set aside, nothing failed. */
 .banner-discarded {
   background: var(--n-100);
@@ -449,7 +449,7 @@ button.primary:hover:not(:disabled),
 }
 
 /* Destructive actions are filled, not outlined: a reversible-looking control
-   on an irreversible action is the wrong affordance (§11.2). */
+   on an irreversible action is the wrong affordance. */
 button.danger {
   background: var(--red);
   border-color: transparent;
@@ -641,7 +641,7 @@ input[type="radio"] {
 /* -------------------------------------------------------------------- tabs */
 
 /* Quick views are tabs, not pill buttons: they are alternate views of one
-   list, and the count is part of the label (§15.1). */
+   list, and the count is part of the label. */
 .quick-views {
   display: flex;
   gap: var(--space-1);
@@ -895,7 +895,8 @@ input[type="radio"] {
 }
 
 /* The × glyph is ~20px on screen, which is under WCAG 2.2 SC 2.5.8's 24×24
-   target floor and far under the 48px §11.1.6 asks for on touch. Expanding
+   target floor and far under the 48px the tap-target tokens set for touch.
+   Expanding
    the hit area outward is free here and nothing is stolen: the only other
    element in .modal-head is the title, which is not interactive. */
 .modal-close::after {
@@ -1110,7 +1111,7 @@ input[type="radio"] {
   font-weight: var(--fw-medium);
 }
 
-/* Owner / next-actor row, beneath the track (§18.1). */
+/* Owner / next-actor row, beneath the track (§13.3). */
 .rail-summary {
   display: flex;
   align-items: center;
@@ -1600,11 +1601,11 @@ input[type="radio"] {
 
 .toast-info {
   border-color: var(--n-200);
-  /* Was --accent-500, which §2.2 reserves for "this is the current step /
-     your turn". An informational toast carries no turn meaning, so painting it
-     with the accent spent the one colour the system keeps unspent. --info is the
-     tone §2.4 assigns to general notice, and it is the same ink the info banner
-     and the SUBMITTED badge already use. */
+  /* Was --accent-500, which the token sheet reserves for "this is the current
+     step / your turn". An informational toast carries no turn meaning, so
+     painting it with the accent spent the one colour the system keeps unspent.
+     --info is the tone assigned to general notice here, the same ink the info
+     banner and the SUBMITTED badge already use. */
   border-left-color: var(--info);
   background: var(--n-0);
   color: var(--n-800);
@@ -1642,7 +1643,8 @@ input[type="radio"] {
 /* ------------------------------------------------------------------ login */
 
 /* Two panels: the brand narrative answers "what is this system for" before the
-   form asks for anything, which is the only onboarding this PoC has (§13). */
+   form asks for anything, which is the only onboarding the first page offers
+   (§13.1 lists no welcome screen). */
 .login-page {
   min-height: 100vh;
   display: grid;
@@ -1777,8 +1779,9 @@ input[type="radio"] {
 }
 
 /* Reduced motion for the two transform-based affordances that are NOT
-   animations — the 1px button press and the 1px card lift. §7.4 names only the
-   toast and the shimmer, so this block is a strengthening, not a fix.
+   animations — the 1px button press and the 1px card lift. The earlier
+   reduced-motion blocks cover only the toast and the shimmer, so this block
+   is a strengthening, not a fix.
    It zeroes the duration rather than the transform: a 1px displacement is not
    a vestibular trigger, and `transform: none` here would delete the only press
    feedback a button has (nothing else changes on :active), trading a motion
@@ -1793,7 +1796,8 @@ input[type="radio"] {
 }
 
 /* Work that is actively moving gets the accent edge — it is the row the
-   technician should open first (§16.1). */
+   technician should open first, the "your turn" meaning the token sheet
+   reserves the accent for. */
 .ticket-card-active {
   border-left: 3px solid var(--accent-500);
 }
