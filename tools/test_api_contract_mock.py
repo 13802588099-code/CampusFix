@@ -111,6 +111,18 @@ class ContractMockTests(unittest.TestCase):
                 self.assertEqual(error["code"], code)
                 self.assertEqual(headers["X-Request-ID"], error["request_id"])
 
+    def test_assignment_target_errors_are_selectable_422_field_errors(self):
+        for name in ("technician_not_found", "technician_wrong_role", "technician_inactive"):
+            with self.subTest(example=name):
+                status, headers, body = self.request(
+                    "POST", "/api/tickets/1/assign", {"X-Mock-Status": "422", "X-Mock-Example": name}
+                )
+                error = json.loads(body)["error"]
+                self.assertEqual(status, 422)
+                self.assertEqual(error["code"], "VALIDATION_ERROR")
+                self.assertEqual([field["field"] for field in error["field_errors"]], ["technician_id"])
+                self.assertEqual(headers["X-Request-ID"], error["request_id"])
+
     def test_logout_has_no_body_and_does_not_issue_a_fake_session_cookie(self):
         status, headers, body = self.request("POST", "/api/auth/logout")
         self.assertEqual(status, 204)

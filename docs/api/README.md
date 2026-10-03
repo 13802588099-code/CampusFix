@@ -10,6 +10,8 @@
 
 入口：[最小字段清单](minimal-fields.md) → [OpenAPI 契约](openapi.yaml) → [前端评审清单](review-checklist.md)。
 
+2026-10-03 经项目负责人在本次会话批准，按基线文档修订 1.0.1 补齐 PR #65 评审 §3.3：分派目标不存在、非 Technician 或已停用，统一使用 `422 / VALIDATION_ERROR`，字段错误指向 `technician_id`。此次只完善待评审稿的错误语义和样例，契约仍为 `1.0.0 / pending-review`，不代表整个契约已获人工批准或冻结。
+
 ## 已实现与待实现对照
 
 | 契约 / 能力 | `base-auth` 现状 | 此次一致性证据 |
@@ -36,6 +38,7 @@
 | --- | --- |
 | 成功响应 | 创建工单/留言/地点 201；其他有正文动作 200；退出 204 无正文。正文直接返回声明对象，不额外套 `data` |
 | 错误 | 固定 `{error:{code,message,request_id,field_errors}}`；只复用 Core 8 个枚举。400/413/415/422 使用 VALIDATION_ERROR，通过 HTTP 状态区分。业务状态冲突 CONFLICT，旧版本 TICKET_VERSION_CONFLICT |
+| 分派目标校验 | 目标不存在、非 Technician 或已停用均为 422 / VALIDATION_ERROR，field_errors 指向 technician_id；前端提示重新选择。服务端执行分派时校验，失败不改变工单状态、版本、负责人、分派记录或事件 |
 | ID | JSON 正整数 `integer/int64`。不擅自改成字符串；JS 超过 `Number.MAX_SAFE_INTEGER` 会有精度风险，未来变更需评审，当前演示数据应处于安全范围 |
 | 时间 | UTC ISO 8601，以 Z 结尾；趋势日期单独使用 Asia/Shanghai 的 YYYY-MM-DD。数据库仍使用 timestamptz |
 | 分页 | `items/next_cursor`；无下一页 null。默认 20、最大 100；排序 `created_at DESC,id DESC`。游标不透明，不跨筛选条件复用；无 count/offset/page 额外接口 |
@@ -90,6 +93,9 @@ pnpm --dir tools/api-contract run typecheck
 | 审核驳回 | POST `/api/tickets/1/review`，`X-Mock-Example: rejected` |
 | 空列表 | GET `/api/tickets`，`X-Mock-Example: empty` |
 | 版本冲突 | POST `/api/tickets/1/confirm`，`X-Mock-Status: 409`、`X-Mock-Example: version` |
+| 分派目标不存在 | POST `/api/tickets/1/assign`，`X-Mock-Status: 422`、`X-Mock-Example: technician_not_found` |
+| 分派目标角色不符 | POST `/api/tickets/1/assign`，`X-Mock-Status: 422`、`X-Mock-Example: technician_wrong_role` |
+| 分派目标已停用 | POST `/api/tickets/1/assign`，`X-Mock-Status: 422`、`X-Mock-Example: technician_inactive` |
 | 来源拒绝 | 任一声明 403 的写端点，`X-Mock-Status: 403`、`X-Mock-Example: origin` |
 | 角色拒绝 | 声明 403 的端点，`X-Mock-Status: 403`、`X-Mock-Example: role` |
 

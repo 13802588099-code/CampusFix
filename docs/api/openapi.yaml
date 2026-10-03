@@ -344,6 +344,10 @@ paths:
       summary: Admin 分派一名启用的 Technician
       description: |
         仅 ADMIN，PENDING_ASSIGNMENT → ASSIGNED。technician_id 必须属于启用的 TECHNICIAN。
+        technician_id 对应账户不存在、角色不是 TECHNICIAN 或已停用，均返回 422 / VALIDATION_ERROR，
+        field_errors 指向 technician_id；不以目标账户的 404 或 409 表达这些失败。
+        执行分派时由后端校验；失败不改变工单状态、版本、负责人、分派记录或事件。
+        工单不存在、工单状态不允许及旧版本仍按原有 404 / 409 语义处理。
         一张工单同时最多一条 ended_at IS NULL 的分派；P0 不支持重新分派。
         assignments、current_assignee_id、状态、版本与 TICKET_ASSIGNED 事件同事务提交。
         关闭后保留 current_assignee_id，ended_at 在 P0 正常流程仍为空。
@@ -370,7 +374,7 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/AssignValidationError'
         '500':
           $ref: '#/components/responses/InternalError'
   /api/tickets/{id}/start:
@@ -1696,6 +1700,30 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example: {error: {code: VALIDATION_ERROR, message: Unsupported image type., request_id: req_example, field_errors: []}}
+    AssignValidationError:
+      description: |
+        422 / VALIDATION_ERROR，分派字段校验失败。technician_id 对应账户不存在、
+        角色不是 TECHNICIAN 或已停用时，field_errors 指向 technician_id，要求重新选择。
+        也适用于必填字段缺失、ID 或 expected_version 格式不合法等输入校验失败。
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing_field:
+              value: {error: {code: VALIDATION_ERROR, message: Request validation failed., request_id: req_example, field_errors: [{field: technician_id, message: Field required, type: missing}]}}
+            technician_not_found:
+              summary: 所选账户不存在
+              value: {error: {code: VALIDATION_ERROR, message: Select an available technician., request_id: req_example, field_errors: [{field: technician_id, message: The selected account does not exist., type: value_error}]}}
+            technician_wrong_role:
+              summary: 所选账户不是 Technician
+              value: {error: {code: VALIDATION_ERROR, message: Select an available technician., request_id: req_example, field_errors: [{field: technician_id, message: The selected account is not a technician., type: value_error}]}}
+            technician_inactive:
+              summary: 所选 Technician 已停用
+              value: {error: {code: VALIDATION_ERROR, message: Select an available technician., request_id: req_example, field_errors: [{field: technician_id, message: The selected technician is inactive., type: value_error}]}}
     ValidationError:
       description: 422 / VALIDATION_ERROR，字段校验、损坏图片或图片数量校验失败。
       headers:

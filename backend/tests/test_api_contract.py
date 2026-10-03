@@ -200,6 +200,21 @@ def test_error_codes_are_exactly_core_enum_and_http_examples_agree(contract):
                     assert value["error"]["field_errors"] == []
 
 
+@pytest.mark.parametrize("example_name", [
+    "technician_not_found", "technician_wrong_role", "technician_inactive",
+])
+def test_invalid_assignment_target_is_a_422_field_error(contract, example_name):
+    operation = contract["paths"]["/api/tickets/{id}/assign"]["post"]
+    body, _ = response(contract, operation, "422")
+    example = body["content"]["application/json"]["examples"][example_name]["value"]
+    schema_validator(contract, "ErrorResponse").validate(example)
+    error = example["error"]
+    assert error["code"] == "VALIDATION_ERROR"
+    assert len(error["field_errors"]) == 1
+    assert error["field_errors"][0]["field"] == "technician_id"
+    assert error["field_errors"][0]["message"]
+
+
 def test_every_request_and_json_response_example_validates(contract):
     checked = 0
     for path, method, _, operation in operations(contract):
